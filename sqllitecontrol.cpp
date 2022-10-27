@@ -257,7 +257,7 @@ bool SqlLiteControl::loadFilesWithFilters(QList<DB_FILE_INFO> *output, int pageS
                 filterDateDownloadStart,
                 filterDateDownloadEnd,
                 filterSerialNumber
-            );
+                );
     QString queryText = "SELECT * FROM mediafiles"
             + condition
             + " LIMIT "
@@ -279,80 +279,92 @@ bool SqlLiteControl::loadFilesWithFilters(QList<DB_FILE_INFO> *output, int pageS
             query.value(rec.indexOf("local_url")).toString()
         };
         output->append(dev_info);
-     }
+    }
+    return true;
+}
+
+bool SqlLiteControl::deleteFilesByUrl(QString url)
+{
+    QSqlQuery query(db);
+    QString queryText = QString("DELETE FROM mediafiles WHERE local_url='$1'").arg(url);
+
+    if (!query.exec(queryText)) {
+        qDebug() << "Ошибка" << query.lastError() << "в запросе:" << query.lastQuery();
+        return false;
+    }
     return true;
 }
 
 QString SqlLiteControl::createCondition(QVariant filterMp3,
-                                      QVariant filterMp4,
-                                      QVariant filterJpg,
-                                      QVariant filterDateRecordStart,
-                                      QVariant filterDateRecordEnd,
-                                      QVariant filterDateDownloadStart,
-                                      QVariant filterDateDownloadEnd,
-                                      QVariant filterSerialNumber)
+                                        QVariant filterMp4,
+                                        QVariant filterJpg,
+                                        QVariant filterDateRecordStart,
+                                        QVariant filterDateRecordEnd,
+                                        QVariant filterDateDownloadStart,
+                                        QVariant filterDateDownloadEnd,
+                                        QVariant filterSerialNumber)
 {
-  QString result = "";
-  if(filterMp3.canConvert(QMetaType::Bool)){
-    if(filterMp3.toBool()){
-      result.append("local_url LIKE '%.mp3'");
+    QString result = "";
+    if(filterMp3.canConvert(QMetaType::Bool)){
+        if(filterMp3.toBool()){
+            result.append("local_url LIKE '%.mp3'");
+        }
     }
-  }
-  if(filterMp4.canConvert(QMetaType::Bool)){
-    if(filterMp4.toBool()){
-      if(result != ""){
-        result.append(" AND ");
-      }
-      result.append("local_url LIKE '%.mp4'");
+    if(filterMp4.canConvert(QMetaType::Bool)){
+        if(filterMp4.toBool()){
+            if(result != ""){
+                result.append(" AND ");
+            }
+            result.append("local_url LIKE '%.mp4'");
+        }
     }
-  }
-  if(filterJpg.canConvert(QMetaType::Bool)){
-    if(filterJpg.toBool()){
-      if(result != ""){
-        result.append(" AND ");
-      }
-      result.append("local_url LIKE '%jpg'");
+    if(filterJpg.canConvert(QMetaType::Bool)){
+        if(filterJpg.toBool()){
+            if(result != ""){
+                result.append(" AND ");
+            }
+            result.append("local_url LIKE '%jpg'");
+        }
     }
-  }
-  QDateTime buffDt;
-  buffDt = filterDateRecordStart.toDateTime();
-  if(buffDt.isValid()){
+    QDateTime buffDt;
+    buffDt = filterDateRecordStart.toDateTime();
+    if(buffDt.isValid()){
+        if(result != ""){
+            result.append(" AND ");
+        }
+        result.append("strftime('%s',record_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+    }
+    buffDt = filterDateRecordEnd.toDateTime();
+    if(buffDt.isValid()){
+        if(result != ""){
+            result.append(" AND ");
+        }
+        result.append("strftime('%s',record_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+    }
+    buffDt = filterDateDownloadStart.toDateTime();
+    if(buffDt.isValid()){
+        if(result != ""){
+            result.append(" AND ");
+        }
+        result.append("strftime('%s',download_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+    }
+    buffDt = filterDateDownloadEnd.toDateTime();
+    if(buffDt.isValid()){
+        if(result != ""){
+            result.append(" AND ");
+        }
+        result.append("strftime('%s',download_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+    }
+    if(filterSerialNumber.toString() != ""){
+        if(result != ""){
+            result.append(" AND ");
+        }
+        result.append("dev_serial_number = " + filterSerialNumber.toString());
+    }
     if(result != ""){
-      result.append(" AND ");
+        result.prepend(" WHERE ");
     }
-    result.append("strftime('%s',record_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
-  }
-  buffDt = filterDateRecordEnd.toDateTime();
-  if(buffDt.isValid()){
-    if(result != ""){
-      result.append(" AND ");
-    }
-    result.append("strftime('%s',record_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
-  }
-  buffDt = filterDateDownloadStart.toDateTime();
-  if(buffDt.isValid()){
-    if(result != ""){
-      result.append(" AND ");
-    }
-    result.append("strftime('%s',download_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
-  }
-  buffDt = filterDateDownloadEnd.toDateTime();
-  if(buffDt.isValid()){
-    if(result != ""){
-      result.append(" AND ");
-    }
-    result.append("strftime('%s',download_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
-  }
-  if(filterSerialNumber.toString() != ""){
-    if(result != ""){
-      result.append(" AND ");
-    }
-    result.append("dev_serial_number = " + filterSerialNumber.toString());
-  }
-  if(result != ""){
-    result.prepend(" WHERE ");
-  }
-  return result;
+    return result;
 }
 
 

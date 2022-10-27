@@ -25,47 +25,6 @@ class SqlLiteControl : public QObject
 public:
     static SqlLiteControl* getSqlLiteControl(); //Singleton
 
-//    //структура для хранения данных о файлах
-//    struct FileData {
-//      QString dev_serial_number;
-//      QDateTime download_time;
-//      QDateTime record_time;
-//      QString file_size;
-//      QString local_url;
-//      FileData(){}
-//      FileData(QString dev_serial_number,
-//               QDateTime download_time,
-//               QDateTime record_time,
-//               QString file_size,
-//               QString local_url) :
-//          dev_serial_number(dev_serial_number),
-//          download_time(download_time),
-//          record_time(record_time),
-//          file_size(file_size),
-//          local_url(local_url){}
-//    };
-
-//    //структура для хранения данных об оборудовании
-//    struct HardwareData {
-//      QString dev_serial_number;
-//      QDateTime registration_time;
-//      QDateTime last_online_time;
-//      int battery_lvl;
-//      int download_lvl;
-//      HardwareData();
-//      HardwareData(QString dev_serial_number,
-//                   QDateTime registration_time,
-//                   QDateTime last_online_time,
-//                   int battery_lvl,
-//                   int download_lvl) :
-//          dev_serial_number(dev_serial_number),
-//          registration_time(registration_time),
-//          last_online_time(last_online_time),
-//          battery_lvl(battery_lvl),
-//          download_lvl(download_lvl)
-//      {}
-//    };
-
 public slots:
     bool AddNewDev(QString dev_serial_number);
 
