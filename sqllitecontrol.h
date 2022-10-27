@@ -56,6 +56,8 @@ public slots:
                    QVariant filterDateDownloadEnd=QVariant(),
                    QVariant filterSerialNumber=QVariant());
 
+    bool deleteFilesByUrl(QString url);
+
 
 signals:
 
