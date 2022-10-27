@@ -1,10 +1,21 @@
 #include "sqllitecontrol.h"
 
+SqlLiteControl* SqlLiteControl::sqliteControlPtr=nullptr;
+
 SqlLiteControl::SqlLiteControl(QObject *parent)
     : QObject{parent}
 {
     ConnectToDataBase();
     InitTables();
+}
+
+SqlLiteControl *SqlLiteControl::getSqlLiteControl()
+{
+    if (!sqliteControlPtr)
+    {
+        sqliteControlPtr = new SqlLiteControl();
+    }
+    return sqliteControlPtr;
 }
 
 bool SqlLiteControl::AddNewDev(QString serial_number)
@@ -13,9 +24,9 @@ bool SqlLiteControl::AddNewDev(QString serial_number)
     QSqlQuery query = QSqlQuery(db);
 
     error_flag = query.exec(
-        QString (
-            "INSERT INTO  devices "
-            "("
+                QString (
+                    "INSERT INTO  devices "
+                    "("
                 "dev_serial_number"
             ")"
             "VALUES"
@@ -182,6 +193,166 @@ bool SqlLiteControl::GetLocalFileList(QList<DB_FILE_INFO> *file_list)
         qDebug() << query.lastError().text();
         return false;
     }
+}
+
+bool SqlLiteControl::loadHardware(QList<DB_DEV_INFO> *output)
+{
+    QSqlQuery query(db);
+    if (!query.exec("SELECT * FROM devices")) {
+      qDebug() << "Ошибка" << query.lastError() << "в запросе:" << query.lastQuery();
+      return false;
+    }
+    QSqlRecord rec = query.record();
+    while (query.next()) {
+        DB_DEV_INFO file_info = {
+            query.value(rec.indexOf("dev_serial_number")).toString(),
+            query.value(rec.indexOf("registration_time")).toString(),
+            query.value(rec.indexOf("last_online_time")).toString(),
+            query.value(rec.indexOf("battery_lvl")).toInt(),
+            query.value(rec.indexOf("download_lvl")).toInt()
+        };
+        output->append(file_info);
+//      QString dev_serial_number = query.value(rec.indexOf("dev_serial_number")).toString();
+//      QString registration_time = query.value(rec.indexOf("registration_time")).toString();
+//      QString last_online_time = query.value(rec.indexOf("last_online_time")).toString();
+//      int battery_lvl = query.value(rec.indexOf("battery_lvl")).toInt();
+//      int download_lvl = query.value(rec.indexOf("download_lvl")).toInt();
+    }
+    return true;
+}
+
+bool SqlLiteControl::loadFiles(QList<DB_FILE_INFO> *output)
+{
+    QSqlQuery query(db);
+    QString queryText = "SELECT * FROM mediafiles";
+
+    if (!query.exec(queryText)) {
+        qDebug() << "Ошибка" << query.lastError() << "в запросе:" << query.lastQuery();
+        return false;
+    }
+    QSqlRecord rec = query.record();
+    while (query.next()) {
+        DB_FILE_INFO dev_info = {
+            query.value(rec.indexOf("dev_serial_number")).toString(),
+            query.value(rec.indexOf("download_time")).toString(),
+            query.value(rec.indexOf("record_time")).toString(),
+            query.value(rec.indexOf("file_size")).toString(),
+            query.value(rec.indexOf("local_url")).toString()
+        };
+        output->append(dev_info);
+     }
+    return true;
+}
+
+bool SqlLiteControl::loadFilesWithFilters(QList<DB_FILE_INFO> *output, int pageSize, int pageNum, QVariant filterMp3, QVariant filterMp4, QVariant filterJpg, QVariant filterDateRecordStart, QVariant filterDateRecordEnd, QVariant filterDateDownloadStart, QVariant filterDateDownloadEnd, QVariant filterSerialNumber)
+{
+    QSqlQuery query(db);
+    QString condition = createCondition
+            (
+                filterMp3,
+                filterMp4,
+                filterJpg,
+                filterDateRecordStart,
+                filterDateRecordEnd,
+                filterDateDownloadStart,
+                filterDateDownloadEnd,
+                filterSerialNumber
+            );
+    QString queryText = "SELECT * FROM mediafiles"
+            + condition
+            + " LIMIT "
+            + QString::number(pageSize)
+            + " OFFSET "
+            + QString::number(pageNum*pageSize);
+
+    if (!query.exec(queryText)) {
+        qDebug() << "Ошибка" << query.lastError() << "в запросе:" << query.lastQuery();
+        return false;
+    }
+    QSqlRecord rec = query.record();
+    while (query.next()) {
+        DB_FILE_INFO dev_info = {
+            query.value(rec.indexOf("dev_serial_number")).toString(),
+            query.value(rec.indexOf("download_time")).toString(),
+            query.value(rec.indexOf("record_time")).toString(),
+            query.value(rec.indexOf("file_size")).toString(),
+            query.value(rec.indexOf("local_url")).toString()
+        };
+        output->append(dev_info);
+     }
+    return true;
+}
+
+QString SqlLiteControl::createCondition(QVariant filterMp3,
+                                      QVariant filterMp4,
+                                      QVariant filterJpg,
+                                      QVariant filterDateRecordStart,
+                                      QVariant filterDateRecordEnd,
+                                      QVariant filterDateDownloadStart,
+                                      QVariant filterDateDownloadEnd,
+                                      QVariant filterSerialNumber)
+{
+  QString result = "";
+  if(filterMp3.canConvert(QMetaType::Bool)){
+    if(filterMp3.toBool()){
+      result.append("local_url LIKE '%.mp3'");
+    }
+  }
+  if(filterMp4.canConvert(QMetaType::Bool)){
+    if(filterMp4.toBool()){
+      if(result != ""){
+        result.append(" AND ");
+      }
+      result.append("local_url LIKE '%.mp4'");
+    }
+  }
+  if(filterJpg.canConvert(QMetaType::Bool)){
+    if(filterJpg.toBool()){
+      if(result != ""){
+        result.append(" AND ");
+      }
+      result.append("local_url LIKE '%jpg'");
+    }
+  }
+  QDateTime buffDt;
+  buffDt = filterDateRecordStart.toDateTime();
+  if(buffDt.isValid()){
+    if(result != ""){
+      result.append(" AND ");
+    }
+    result.append("strftime('%s',record_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+  }
+  buffDt = filterDateRecordEnd.toDateTime();
+  if(buffDt.isValid()){
+    if(result != ""){
+      result.append(" AND ");
+    }
+    result.append("strftime('%s',record_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+  }
+  buffDt = filterDateDownloadStart.toDateTime();
+  if(buffDt.isValid()){
+    if(result != ""){
+      result.append(" AND ");
+    }
+    result.append("strftime('%s',download_time) >= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+  }
+  buffDt = filterDateDownloadEnd.toDateTime();
+  if(buffDt.isValid()){
+    if(result != ""){
+      result.append(" AND ");
+    }
+    result.append("strftime('%s',download_time) <= strftime('%s','" + buffDt.toString("yyyy-MM-dd  hh:mm:ss") + "')");
+  }
+  if(filterSerialNumber.toString() != ""){
+    if(result != ""){
+      result.append(" AND ");
+    }
+    result.append("dev_serial_number = " + filterSerialNumber.toString());
+  }
+  if(result != ""){
+    result.prepend(" WHERE ");
+  }
+  return result;
 }
 
 

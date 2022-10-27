@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("DMT");
     QCoreApplication::setApplicationName("DmtSoftMini");
 
-    SqlLiteControl *sql_lite = new SqlLiteControl();
+    SqlLiteControl *sql_lite = SqlLiteControl::getSqlLiteControl();
 
     DownloadControl *download_manager = new DownloadControl();
     download_manager->SetDataBase(sql_lite);
