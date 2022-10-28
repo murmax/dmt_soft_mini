@@ -286,7 +286,7 @@ bool SqlLiteControl::loadFilesWithFilters(QList<DB_FILE_INFO> *output, int pageS
 bool SqlLiteControl::deleteFilesByUrl(QString url)
 {
     QSqlQuery query(db);
-    QString queryText = QString("DELETE FROM mediafiles WHERE local_url='$1'").arg(url);
+    QString queryText = QString("DELETE FROM mediafiles WHERE local_url='%1'").arg(url);
 
     if (!query.exec(queryText)) {
         qDebug() << "Ошибка" << query.lastError() << "в запросе:" << query.lastQuery();
