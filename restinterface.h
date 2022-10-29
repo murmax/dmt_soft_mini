@@ -2,7 +2,6 @@
 #define RESTINTERFACE_H
 
 #include <restconnector.h>
-#include <QTextDocument>
 #include "common.h"
 #include "QEventLoop"
 
