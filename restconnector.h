@@ -37,7 +37,7 @@ public:
     };
 
 
-    void initRequester(const QString& host, QSslConfiguration *value);
+    void initRequester(QSslConfiguration *value);
 
     void sendRequest(const QString &apiStr,
                      const handleFuncReply &funcSuccess,
@@ -56,11 +56,9 @@ private:
     static const QString httpTemplate;
     static const QString httpsTemplate;
 
-    QString host;
     QString token;
     QSslConfiguration *sslConfig;
 
-    QString pathTemplate;
 
     QByteArray variantMapToJson(QVariantMap data);
 
@@ -71,7 +69,6 @@ private:
                                      const QString &type,
                                      const QVariantMap &data);
 
-    QJsonObject parseReply(QNetworkReply *reply);
 
     bool onFinishRequest(QNetworkReply *reply);
 
@@ -80,9 +77,6 @@ private:
 
 signals:
     void networkError();
-
-
-public slots:
 };
 
 

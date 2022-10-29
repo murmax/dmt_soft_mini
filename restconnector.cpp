@@ -8,7 +8,6 @@ const QString RestConnector::httpsTemplate = "https://%1/%2";
 const QString RestConnector::KEY_QNETWORK_REPLY_ERROR = "QNetworkReplyError";
 const QString RestConnector::KEY_CONTENT_NOT_FOUND = "ContentNotFoundError";
 
-const QString yandexDiskAddr = "https://cloud-api.yandex.net/v1/disk";
 
 RestConnector::RestConnector(QObject *parent) : QObject(parent)
 {
@@ -24,14 +23,9 @@ RestConnector *RestConnector::getRestConnector()
     return restConnectorPtr;
 }
 
-void RestConnector::initRequester(const QString &host,  QSslConfiguration *value)
+void RestConnector::initRequester( QSslConfiguration *value)
 {
-    this->host = host;
     sslConfig = value;
-    if (sslConfig != nullptr)
-        pathTemplate = httpsTemplate;
-    else
-        pathTemplate = httpTemplate;
 }
 
 void RestConnector::sendRequest(const QString &apiStr,
@@ -44,8 +38,9 @@ void RestConnector::sendRequest(const QString &apiStr,
 {
     QNetworkRequest request = createRequest(apiStr);
     //request.setHeader(QNetworkRequest::CookieHeader, qVariantFromValue(cookies));
-    request.setHeader(QNetworkRequest::CookieHeader, QVariant::fromValue(cookies));
-    qDebug() << "Cookie:" << request.header(QNetworkRequest::CookieHeader).value<QList<QNetworkCookie>>();
+    if (cookies.length()>0)
+        request.setHeader(QNetworkRequest::CookieHeader, QVariant::fromValue(cookies));
+    //qDebug() << "Cookie:" << request.header(QNetworkRequest::CookieHeader).value<QList<QNetworkCookie>>();
 
 
     QNetworkReply *reply = nullptr;
@@ -157,25 +152,6 @@ QNetworkReply* RestConnector::sendCustomRequest(QNetworkAccessManager* manager,
     QNetworkReply* reply =  manager->sendCustomRequest(request, type.toUtf8(), buff);
     buff->setParent(reply);
     return reply;
-}
-
-QJsonObject RestConnector::parseReply(QNetworkReply *reply)
-{
-    QJsonObject jsonObj;
-    QJsonDocument jsonDoc;
-    QJsonParseError parseError;
-    QByteArray replyText = reply!=nullptr ? reply->readAll() : QByteArray();
-    jsonDoc = QJsonDocument::fromJson(replyText, &parseError);
-    if(parseError.error != QJsonParseError::NoError){
-        qDebug() << replyText;
-        qWarning() << "Json parse error: " << parseError.errorString();
-    }else{
-        if(jsonDoc.isObject())
-            jsonObj  = jsonDoc.object();
-        else if (jsonDoc.isArray())
-            jsonObj["non_field_errors"] = jsonDoc.array();
-    }
-    return jsonObj;
 }
 
 bool RestConnector::onFinishRequest(QNetworkReply *reply)

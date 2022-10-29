@@ -5,12 +5,6 @@
 #include "common.h"
 #include "QEventLoop"
 
-enum FileType{
-    MP3,
-    MP4,
-    JPG,
-    OTHER
-};
 
 struct Token
 {
@@ -28,34 +22,65 @@ struct Token
 class RestInterface : public QObject
 {
     Q_OBJECT
-public slots:
-
+public:
     static RestInterface* getRestInterface();
-    void onFail( QNetworkReply *reply);
-    void onFailPut( QNetworkReply *reply);
-    void onSuccess( QNetworkReply *obj);
+public slots:
+    //Бизнес логика
+    void sendPutHardware(DB_DEV_INFO* devInfo); //Обновить информацию об устройстве
+    void sendPostFile(DB_FILE_INFO* fileInfo); //Отослать файл
+private slots:
     void onSuccessToken( QNetworkReply *obj);
     void onSuccessToken2( QNetworkReply *obj);
-    void onSuccessToken3(QNetworkReply *reply);
-    void onFailToken2( QNetworkReply *obj);
-    void sendPut(QVariantMap params);
-    void put_hardware();
-    void sendPostFile(DB_FILE_INFO* fileInfo);
-    //void sendPut();
-signals:
-    void cookiesIsReady();
-private:
-    QPair<QString,FileType> getNameAndTypeFromPath(QString filePath);
-    static QString fileTypeToString(FileType type);
-    explicit RestInterface();
-    static QList<QNetworkCookie> cookies;
-    QNetworkCookie csrfToken;
-    QNetworkCookie sessionId;
-    RestConnector* restConnector;
 
+    //Обновление информации об устройстве
+    void onSuccessPutHardware(QNetworkReply *reply);
+
+    //Загрузка файлов
+    void onSuccessPostFile( QNetworkReply *obj);
+
+    //В случае ошибки запроса
+    void onFail( QNetworkReply *reply);
+
+signals:
+    void cookiesAreReady();
+private:
+    enum DMT_API
+    {
+        API_Files,
+        API_Hardwares,
+        API_Login
+    };
+    enum FileType{
+        MP3,
+        MP4,
+        JPG,
+        OTHER
+    };
+    const QString host = "http://134.0.116.177";
+    const QMap<DMT_API,QString> apiAddress =
+    {
+        {API_Files, "/api/files/"},
+        {API_Hardwares, "/api/registrars/"},
+        {API_Login, "/accounts/login/"}
+    };
+
+    QList<QNetworkCookie> cookies;
+    RestConnector* restConnector;
+    bool cookiesAreBeingUpdated = false;
+
+    RestInterface();
     static RestInterface* restInterfacePtr;
-    static QByteArray tokenTemp;
-    static Token mainToken;
+
+    QHttpPart generatePartForQHttpMultiPart(QString name, QByteArray value);
+    QString generateAddress(DMT_API apiType);
+    void sendPut(QVariantMap params);
+    QPair<QString,FileType> getNameAndTypeFromPath(QString filePath);
+    QString fileTypeToString(FileType type);
+
+
+
+
+
 
 };
 
