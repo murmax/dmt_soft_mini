@@ -5,6 +5,7 @@
 #include "sqllitecontrol.h"
 #include "downloadcontrol.h"
 #include "restinterface.h"
+#include "DatabaseUpload.h"
 
 #include <QVariantMap>
 
@@ -23,8 +24,8 @@ int main(int argc, char *argv[])
     DeviceDmt5 *dmt5_controller = new DeviceDmt5();
     QObject::connect(dmt5_controller, &DeviceDmt5::startDownloadSignal, download_manager, &DownloadControl::startDownloadSlot);
     dmt5_controller->SetDataBase(sql_lite);
+    DatabaseUpload dbUpload;
 
-    RestInterface* restInterface = RestInterface::getRestInterface();
 
     return a.exec();
 

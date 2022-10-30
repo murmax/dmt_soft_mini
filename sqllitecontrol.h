@@ -18,6 +18,12 @@
 
 #define DATABASE "sqllite.db"
 
+#define QDATETIME_FORMAT "yyyy-MM-dd hh:mm:ss"
+
+struct DevInfo{
+    QString dev_serial_number;
+    DB_DEV_INFO devInfo;
+};
 
 class SqlLiteControl : public QObject
 {
@@ -40,7 +46,7 @@ public slots:
 
     bool GetLocalFileList(QList<DB_FILE_INFO> *file_list);
 
-    bool loadHardware(QList<DB_DEV_INFO> *output);
+    bool loadDevs(QList<DevInfo> *output);
 
     bool loadFiles(QList<DB_FILE_INFO> *output);
 

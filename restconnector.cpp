@@ -28,7 +28,7 @@ void RestConnector::initRequester( QSslConfiguration *value)
     sslConfig = value;
 }
 
-void RestConnector::sendRequest(const QString &apiStr,
+QNetworkReply *RestConnector::sendRequest(const QString &apiStr,
                                 const handleFuncReply &funcSuccess,
                                 const handleFuncReply &funcError,
 								QList<QNetworkCookie> cookies,
@@ -103,6 +103,7 @@ void RestConnector::sendRequest(const QString &apiStr,
             reply->deleteLater();
         }
     } );
+    return reply;
 
 }
 

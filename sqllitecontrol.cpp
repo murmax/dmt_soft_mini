@@ -195,7 +195,7 @@ bool SqlLiteControl::GetLocalFileList(QList<DB_FILE_INFO> *file_list)
     }
 }
 
-bool SqlLiteControl::loadHardware(QList<DB_DEV_INFO> *output)
+bool SqlLiteControl::loadDevs(QList<DevInfo> *output)
 {
     QSqlQuery query(db);
     if (!query.exec("SELECT * FROM devices")) {
@@ -204,19 +204,17 @@ bool SqlLiteControl::loadHardware(QList<DB_DEV_INFO> *output)
     }
     QSqlRecord rec = query.record();
     while (query.next()) {
-        DB_DEV_INFO file_info = {
+        DevInfo file_info = {
             query.value(rec.indexOf("dev_serial_number")).toString(),
-            query.value(rec.indexOf("registration_time")).toString(),
-            query.value(rec.indexOf("last_online_time")).toString(),
-            query.value(rec.indexOf("battery_lvl")).toInt(),
-            query.value(rec.indexOf("download_lvl")).toInt()
+            {
+                query.value(rec.indexOf("username")).toString(),
+                query.value(rec.indexOf("registration_time")).toString(),
+                query.value(rec.indexOf("last_online_time")).toString(),
+                query.value(rec.indexOf("battery_lvl")).toInt(),
+                query.value(rec.indexOf("download_lvl")).toInt()
+            }
         };
         output->append(file_info);
-//      QString dev_serial_number = query.value(rec.indexOf("dev_serial_number")).toString();
-//      QString registration_time = query.value(rec.indexOf("registration_time")).toString();
-//      QString last_online_time = query.value(rec.indexOf("last_online_time")).toString();
-//      int battery_lvl = query.value(rec.indexOf("battery_lvl")).toInt();
-//      int download_lvl = query.value(rec.indexOf("download_lvl")).toInt();
     }
     return true;
 }

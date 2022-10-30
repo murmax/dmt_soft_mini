@@ -14,6 +14,13 @@ RestInterface::RestInterface() : QObject(nullptr)
 
 void RestInterface::onSuccessPostFile( QNetworkReply *reply)
 {
+    emit fileSentSuccess(filesPosted.take(reply));
+    qDebug()<<__func__<<reply->readAll();
+}
+
+void RestInterface::onFailPostFile(QNetworkReply *reply)
+{
+    emit fileSentFail(filesPosted.take(reply));
     qDebug()<<__func__<<reply->readAll();
 }
 
@@ -29,8 +36,8 @@ void RestInterface::onSuccessToken( QNetworkReply *reply)
     if (!tokenTemp.isEmpty()){
         QVariantMap data;
         data.insert("csrfmiddlewaretoken",tokenTemp);
-        data.insert("username","qwerty123@gmail.com");
-        data.insert("password","1234");
+        data.insert("username",qUncompress(login));
+        data.insert("password",qUncompress(password));
         RestConnector::getRestConnector()->sendRequest(
                     generateAddress(DMT_API::API_Login),
                     &RestInterface::onSuccessToken2,
@@ -53,12 +60,12 @@ void RestInterface::onSuccessToken2( QNetworkReply *reply)
     emit cookiesAreReady();
 }
 
-void RestInterface::onSuccessPutHardware(QNetworkReply *reply)
+void RestInterface::onSuccessPutDev(QNetworkReply *reply)
 {
     qDebug()<<__func__<<reply->readAll();
 }
 
-void RestInterface::sendPut(QVariantMap params)
+void RestInterface::sendPutDevParams(QVariantMap params, QString dev_serial_number)
 {
     if (cookies.isEmpty()){
         QEventLoop loop;
@@ -89,8 +96,8 @@ void RestInterface::sendPut(QVariantMap params)
         multiPart->append(part);
     }
     RestConnector::getRestConnector()->sendRequest
-            (generateAddress(DMT_API::API_Hardwares)+"00000000/",
-             &RestInterface::onSuccessPutHardware,
+            (generateAddress(DMT_API::API_Devs)+dev_serial_number+"/",
+             &RestInterface::onSuccessPutDev,
              &RestInterface::onFail,
              cookies,
              RestConnector::Type::PUT,
@@ -117,7 +124,8 @@ void RestInterface::sendPostFile(DB_FILE_INFO* fileInfo)
 {
     if(fileInfo != nullptr){
 
-        QFile file(fileInfo->local_url);
+        QUrl urlFile(fileInfo->local_url);
+        QFile file(urlFile.toLocalFile());
         if (file.open(QIODevice::ReadOnly)){
             QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
@@ -147,25 +155,25 @@ void RestInterface::sendPostFile(DB_FILE_INFO* fileInfo)
             {
                 multiPart->append(part);
             }
-            RestConnector::getRestConnector()->sendRequest(
+            QNetworkReply* reply = RestConnector::getRestConnector()->sendRequest(
                         generateAddress(DMT_API::API_Files),
                         &RestInterface::onSuccessPostFile,
-                        &RestInterface::onFail,
+                        &RestInterface::onFailPostFile,
                         cookies,
                         RestConnector::Type::POST_MULTI,
                         QVariantMap(),
                         multiPart);
-
+            filesPosted.insert(reply,fileInfo->local_url);
         }
     }
 }
 
-void RestInterface::sendPutHardware(DB_DEV_INFO *devInfo)
+void RestInterface::sendPutDev(DevInfo *devInfo)
 {
     QVariantMap params;
-    params.insert("power",devInfo->battery_lvl);
-    params.insert("download",devInfo->download_lvl);
-    sendPut(params);
+    params.insert("power",devInfo->devInfo.battery_lvl);
+    params.insert("download",devInfo->devInfo.download_lvl);
+    sendPutDevParams(params,devInfo->dev_serial_number);
 }
 
 QPair<QString, RestInterface::FileType> RestInterface::getNameAndTypeFromPath(QString filePath)
