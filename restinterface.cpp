@@ -9,7 +9,8 @@ RestInterface* RestInterface::restInterfacePtr = nullptr;
 RestInterface::RestInterface() : QObject(nullptr)
 {
     restInterfacePtr = this;
-    RestConnector::getRestConnector()->initRequester(new QSslConfiguration());
+    restConnector = RestConnector::getRestConnector();
+    restConnector->initRequester(new QSslConfiguration());
 }
 
 void RestInterface::onSuccessPostFile( QNetworkReply *reply)
