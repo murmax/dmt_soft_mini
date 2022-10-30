@@ -10,8 +10,7 @@
 #include <QVariantMap>
 
 int main(int argc, char *argv[])
-{    
-    qDebug() << "main";
+{
     QCoreApplication a(argc, argv);
 
     QCoreApplication::setOrganizationName("DMT");

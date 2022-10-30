@@ -16,7 +16,6 @@ RestInterface::RestInterface() : QObject(nullptr)
 void RestInterface::onSuccessPostFile( QNetworkReply *reply)
 {
     emit fileSentSuccess(filesPosted.take(reply));
-    qDebug()<<__func__<<reply->readAll();
 }
 
 void RestInterface::onFailPostFile(QNetworkReply *reply)
@@ -53,17 +52,12 @@ void RestInterface::onSuccessToken2( QNetworkReply *reply)
 {
     QList<QNetworkCookie> cookies1 = reply->header(QNetworkRequest::SetCookieHeader).value<QList<QNetworkCookie>>();
     cookies = cookies1;
-    qDebug()<<__func__<<reply->readAll();
-    for (const auto &e : qAsConst(cookies1))
-    {
-        qDebug()<<"Cookies:"<<e;
-    }
     emit cookiesAreReady();
 }
 
 void RestInterface::onSuccessPutDev(QNetworkReply *reply)
 {
-    qDebug()<<__func__<<reply->readAll();
+
 }
 
 void RestInterface::sendPutDevParams(QVariantMap params, QString dev_serial_number)
@@ -123,11 +117,14 @@ void RestInterface::onFail( QNetworkReply *reply)
 
 void RestInterface::sendPostFile(DB_FILE_INFO* fileInfo)
 {
+
     if(fileInfo != nullptr){
 
         QUrl urlFile(fileInfo->local_url);
-        QFile file(urlFile.toLocalFile());
-        if (file.open(QIODevice::ReadOnly)){
+        QFile* file = new QFile(urlFile.toLocalFile());
+
+
+        if (file->open(QIODevice::ReadOnly)){
             QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
             QList<QHttpPart> form;
@@ -135,27 +132,27 @@ void RestInterface::sendPostFile(DB_FILE_INFO* fileInfo)
 
             QHttpPart imagePart;
             imagePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("image/jpeg"));
-            QString filename(QFileInfo(file).fileName());
-            imagePart.setHeader(QNetworkRequest::ContentDispositionHeader,
-                                QString("form-data; name=\"source\"; filename=\"%1\"")
-                                .arg(filename));
-            imagePart.setBody(file.readAll());
-            file.setParent(multiPart);
+            QString filename(QFileInfo(*file).fileName());
+            QString headerStr = "form-data; name=\"source\"; filename=\"" + filename + "\"";
+            imagePart.setHeader(QNetworkRequest::ContentDispositionHeader,headerStr);
+            imagePart.setBody(file->readAll());
+            file->setParent(multiPart);
             form.append(imagePart);
 
             QPair<QString, FileType> pair = getNameAndTypeFromPath(fileInfo->local_url);
-
             form.append(generatePartForQHttpMultiPart("name",pair.first.toLatin1()));
             form.append(generatePartForQHttpMultiPart("size",fileInfo->size.toLatin1()));
             form.append(generatePartForQHttpMultiPart("type",fileTypeToString(pair.second).toLatin1()));
-            form.append(generatePartForQHttpMultiPart("record_date",fileInfo->record_time.toLatin1()));
-            form.append(generatePartForQHttpMultiPart("unload_date",fileInfo->download_time.toLatin1()));
+            QDateTime::fromString(fileInfo->record_time,QDATETIME_FORMAT).toString("yyyy-MM-dd");
+            form.append(generatePartForQHttpMultiPart("record_date",QDateTime::fromString(fileInfo->record_time,QDATETIME_FORMAT).toString("yyyy-MM-dd").toLatin1()));
+            form.append(generatePartForQHttpMultiPart("unload_date",QDateTime::fromString(fileInfo->download_time,QDATETIME_FORMAT).toString("yyyy-MM-dd").toLatin1()));
             form.append(generatePartForQHttpMultiPart("owner","Test_max")); //TODO: откуда брать?
 
             for (const auto &part : form)
             {
                 multiPart->append(part);
             }
+            file->close();
             QNetworkReply* reply = RestConnector::getRestConnector()->sendRequest(
                         generateAddress(DMT_API::API_Files),
                         &RestInterface::onSuccessPostFile,
@@ -165,6 +162,7 @@ void RestInterface::sendPostFile(DB_FILE_INFO* fileInfo)
                         QVariantMap(),
                         multiPart);
             filesPosted.insert(reply,fileInfo->local_url);
+
         }
     }
 }

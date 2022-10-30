@@ -37,10 +37,8 @@ QNetworkReply *RestConnector::sendRequest(const QString &apiStr,
                                 QHttpMultiPart *multiPart)
 {
     QNetworkRequest request = createRequest(apiStr);
-    //request.setHeader(QNetworkRequest::CookieHeader, qVariantFromValue(cookies));
     if (cookies.length()>0)
         request.setHeader(QNetworkRequest::CookieHeader, QVariant::fromValue(cookies));
-    //qDebug() << "Cookie:" << request.header(QNetworkRequest::CookieHeader).value<QList<QNetworkCookie>>();
 
 
     QNetworkReply *reply = nullptr;

@@ -234,8 +234,9 @@ bool SqlLiteControl::loadFiles(QList<DB_FILE_INFO> *output)
             query.value(rec.indexOf("dev_serial_number")).toString(),
             query.value(rec.indexOf("download_time")).toString(),
             query.value(rec.indexOf("record_time")).toString(),
-            query.value(rec.indexOf("file_size")).toString(),
-            query.value(rec.indexOf("local_url")).toString()
+            query.value(rec.indexOf("local_url")).toString(),
+            query.value(rec.indexOf("file_size")).toString()
+
         };
         output->append(dev_info);
      }
