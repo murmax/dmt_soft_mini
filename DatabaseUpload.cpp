@@ -18,6 +18,7 @@ void DatabaseUpload::fileUploadSuccessfully(QString url)
 {
     QUrl urlFile(url);
     QFile::remove(urlFile.toLocalFile());
+    SqlLiteControl::getSqlLiteControl()->deleteFilesByUrl(url);
 }
 
 void DatabaseUpload::fileUploadFailed(QString url)
