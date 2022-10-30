@@ -18,6 +18,7 @@ void DatabaseUpload::fileUploadSuccessfully(QString url)
 {
     QUrl urlFile(url);
     QFile::remove(urlFile.toLocalFile());
+    SqlLiteControl::getSqlLiteControl()->deleteFilesByUrl(url);
 }
 
 void DatabaseUpload::fileUploadFailed(QString url)
@@ -40,7 +41,7 @@ void DatabaseUpload::upload()
 
     QList<DB_FILE_INFO> files;
     sqlite->loadFiles(&files);
-    for (auto file : files)
+    for (auto file : qAsConst(files))
     {
         if (lastTimeUploaded.toMSecsSinceEpoch()+uploadTimer.interval()
                 <
