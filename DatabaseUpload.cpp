@@ -32,7 +32,17 @@ void DatabaseUpload::upload()
     SqlLiteControl* sqlite = SqlLiteControl::getSqlLiteControl();
     QList<DevInfo> devs;
     sqlite->loadDevs(&devs);
+    qDebug() << "base:";
+    for (DevInfo devInfo : qAsConst(devs))
+    {
+        qDebug() << "devInfo.dev_serial_number=" << devInfo.dev_serial_number;
+    }
     QList<DevInfo> filteredDevs = filterOnlyChangedDevHashes(devs);
+    qDebug() << "sorted:";
+    for (DevInfo devInfo : qAsConst(filteredDevs))
+    {
+        qDebug() << "devInfo.dev_serial_number=" << devInfo.dev_serial_number;
+    }
     for (DevInfo devInfo : qAsConst(filteredDevs))
     {
         devHashMap.insert(devInfo.dev_serial_number,generateHash(devInfo));
@@ -41,13 +51,18 @@ void DatabaseUpload::upload()
 
     QList<DB_FILE_INFO> files;
     sqlite->loadFiles(&files);
-    for (auto file : qAsConst(files))
+    for (DB_FILE_INFO fileInfo : qAsConst(files))
+    {
+        qDebug() << "fileInfo.local_url=" << fileInfo.local_url;
+    }
+    for (auto file : files)
     {
         if (lastTimeUploaded.toMSecsSinceEpoch()+uploadTimer.interval()
                 <
                 QDateTime::fromString(file.download_time,QDATETIME_FORMAT).toMSecsSinceEpoch()
             )
         {
+            qDebug() << "file send POST. file.local_url=" << file.local_url;
             rest->sendPostFile(&file);
         }
     }
